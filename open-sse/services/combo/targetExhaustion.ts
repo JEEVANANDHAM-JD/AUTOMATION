@@ -145,7 +145,14 @@ function markTransientOrConnectionLevel(
 ): void {
   const { result, errorText, rawModel, isTokenLimitBreach, sets, log, tag, structuredError } = opts;
   const provider = target.provider;
-  if (result.status === 429 && !isTokenLimitBreach && provider && provider !== "unknown") {
+  const requestScopedFailure = isRequestScopedUpstreamFailure(structuredError);
+  if (
+    result.status === 429 &&
+    !isTokenLimitBreach &&
+    !requestScopedFailure &&
+    provider &&
+    provider !== "unknown"
+  ) {
     sets.transientRateLimitedProviders.add(provider);
   }
   markConnectionLevelExhaustion(target, {

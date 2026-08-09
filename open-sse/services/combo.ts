@@ -14,6 +14,7 @@ import {
   getModelLockoutInfo,
   getRuntimeProviderProfile,
   hasPerModelQuota,
+  isAccountSemaphoreFull,
   isModelLocked,
   MODEL_ACCESS_DENIED_PATTERNS,
   recordModelLockoutFailure,
@@ -153,8 +154,8 @@ import {
   resolveDelayMs,
   comboModelNotFoundResponse,
   isStreamReadinessFailureErrorBody,
+  isStreamEarlyEofErrorBody,
   isTokenLimitBreachErrorBody,
-  isLocalQueueCapacityErrorBody,
   toRecordedTarget,
   getExhaustedTargetSkipReason,
   clampPercent,
@@ -570,6 +571,7 @@ export async function handleComboChat({
   signal,
   apiKeyAllowedConnections = null,
   nesting = null,
+  hiddenModelsByProvider = getHiddenModelsByProvider(),
 }: HandleComboChatOptions): Promise<Response> {
   const comboCtx = createComboContext({ body, combo, settings, relayOptions, log });
   const {
@@ -607,6 +609,7 @@ export async function handleComboChat({
       clientRequestedStream,
       handleSingleModelWithTimeout,
       log,
+      hiddenModelsByProvider,
     });
     if (pinnedDispatch) return pinnedDispatch;
   }
@@ -628,6 +631,7 @@ export async function handleComboChat({
     relayOptions,
     signal,
     apiKeyAllowedConnections,
+    hiddenModelsByProvider,
     runCombo: handleComboChat,
   });
   if (fusionDispatch) return fusionDispatch;
@@ -636,7 +640,12 @@ export async function handleComboChat({
   // chaosEngine.ts (dispatchChaosFromCombo), returning null when not chaos-enabled.
   const chaosDispatch = dispatchChaosFromCombo({
     cfg,
-    comboModels: combo.models || [],
+    comboModels: resolveComboTargets(
+      combo,
+      allCombos,
+      clampComboDepth(config.maxComboDepth),
+      hiddenModelsByProvider
+    ).map((target) => target.modelStr),
     comboName: combo.name,
     body,
     handleSingleModel: handleSingleModelWithTimeout,
@@ -649,8 +658,10 @@ export async function handleComboChat({
     combo,
     config,
     strategy,
+    allCombos,
     handleSingleModelWithTimeout,
     log,
+    hiddenModelsByProvider,
   });
   if (pipelineDispatch) return pipelineDispatch;
 
@@ -669,6 +680,7 @@ export async function handleComboChat({
     relayOptions,
     signal,
     apiKeyAllowedConnections,
+    hiddenModelsByProvider,
     runCombo: handleComboChat,
   });
   if (runtimeUnitDispatch) return runtimeUnitDispatch;
@@ -684,6 +696,7 @@ export async function handleComboChat({
       settings,
       allCombos,
       signal,
+      hiddenModelsByProvider,
     });
   }
 
@@ -708,6 +721,7 @@ export async function handleComboChat({
     isModelAvailable,
     handleSingleModelWithTimeout,
     buildAutoCandidates,
+    hiddenModelsByProvider,
   });
   if ("earlyResponse" in targetResolution) return targetResolution.earlyResponse;
   const { stickyWeightedLimit, getWeightedStepKeyForTarget, preScreenMap } = targetResolution;
@@ -749,7 +763,7 @@ export async function handleComboChat({
     combo,
     config,
     body,
-    resolveShadowTargets(combo, config, allCombos),
+    resolveShadowTargets(combo, config, allCombos, hiddenModelsByProvider),
     handleSingleModel,
     isModelAvailable,
     strategy,
@@ -996,6 +1010,20 @@ export async function handleComboChat({
           const gateResult = checkCredentialGate(connectionId, provider, modelStr);
           if (gateResult.allowed === false) {
             logCredentialSkip(log, modelStr, gateResult.reason || "Credential gate blocked");
+            if (i > 0) fallbackCount++;
+            return null;
+          }
+
+          // Concurrency gate: fail-fast skip when connection is at max_concurrent capacity (e.g. Featherless 1/1)
+          const maxConcurrentCap = await lookupPositiveCap(connectionId);
+          if (
+            maxConcurrentCap &&
+            isAccountSemaphoreFull(provider, connectionId, maxConcurrentCap)
+          ) {
+            log.info(
+              "COMBO",
+              `Skipping ${modelStr} — connection ${connectionId} is at max concurrency cap (${maxConcurrentCap})`
+            );
             if (i > 0) fallbackCount++;
             return null;
           }
@@ -1512,11 +1540,15 @@ export async function handleComboChat({
           const isStreamReadinessFailure =
             (result.status === 502 || result.status === 504) &&
             isStreamReadinessFailureErrorBody(errorBody);
+          // An early EOF is an upstream failure, not a readiness probe — the breaker must
+          // see it even though the transient-retry path below treats both codes alike.
+          const isStreamEarlyEof =
+            (result.status === 502 || result.status === 504) &&
+            isStreamEarlyEofErrorBody(errorBody);
 
           // FIX 5: a local per-API-key token-limit 429 must not cool shared accounts.
           const isTokenLimitBreach =
             result.status === 429 && isTokenLimitBreachErrorBody(errorBody);
-          const isLocalQueueCapacity = isLocalQueueCapacityErrorBody(errorBody);
 
           // Fix #1681: Status 499 means client disconnected — stop combo loop immediately.
           // There is no point trying fallback models when nobody is listening.
@@ -1533,22 +1565,6 @@ export async function handleComboChat({
             // executeTarget must return the {ok,response} contract — a raw Response
             // here makes the speculative loop's res.ok/res.response checks both miss,
             // so the combo would wrongly fall through to the next model after a 499.
-            return { ok: false, response: result };
-          }
-          if (isLocalQueueCapacity) {
-            log.info(
-              "COMBO",
-              `Local rate-limit queue capacity reached for ${modelStr} — returning without upstream fallback`
-            );
-            recordComboRequest(combo.name, modelStr, {
-              success: false,
-              latencyMs: Date.now() - startTime,
-              fallbackCount,
-              strategy,
-              target: toRecordedTarget(target),
-            });
-            recordedAttempts++;
-            if (i > 0) fallbackCount++;
             return { ok: false, response: result };
           }
 
@@ -1731,6 +1747,7 @@ export async function handleComboChat({
           if (
             shouldRecordProviderBreakerFailure({
               isStreamReadinessFailure,
+              isStreamEarlyEof,
               status: result.status,
               sameProviderNext,
               skipProviderBreaker: fallbackResult.skipProviderBreaker,
@@ -2020,15 +2037,26 @@ export async function handleComboChat({
 
       // All set retries exhausted — return the final error
       if (!lastStatus) {
+        if (recordedAttempts === 0) {
+          notifyWebhookEvent("request.failed", {
+            combo: combo.name,
+            reason: "ALL_TARGETS_SKIPPED",
+            latencyMs,
+            fallbackCount,
+          });
+          return errorResponseWithComboDiagnostics(
+            503,
+            "Service temporarily unavailable: all targets were skipped by pre-dispatch filters",
+            buildComboDiag("all_targets_skipped"),
+            { code: "ALL_TARGETS_SKIPPED", type: "service_unavailable" }
+          );
+        }
         notifyWebhookEvent("request.failed", {
           combo: combo.name,
           reason: "ALL_ACCOUNTS_INACTIVE",
           latencyMs,
           fallbackCount,
         });
-        // Silent-stop fix: bump the failure counter so the session pin clears on the 3rd
-        // consecutive all-inactive cascade; buildRecoveryHint emits `switch-combo` with a
-        // next-step that points the user at /dashboard/providers.
         recordComboFailure(effectiveSessionId, combo.name);
         return errorResponseWithComboDiagnostics(
           503,
@@ -2195,11 +2223,15 @@ async function handleRoundRobinCombo({
   settings,
   allCombos,
   signal,
+  hiddenModelsByProvider = getHiddenModelsByProvider(),
 }: HandleRoundRobinOptions): Promise<Response> {
   const config = settings
     ? resolveComboConfig(combo, settings)
     : { ...getDefaultComboConfig(), ...(combo.config || {}) };
-  const concurrency = config.concurrencyPerModel ?? 3;
+  // #9158: clamp combo-level concurrency to a sane bound — a config carrying a
+  // huge or negative value would otherwise open an unbounded semaphore and
+  // flood targets (or deadlock at 0).
+  const concurrency = Math.min(Math.max(config.concurrencyPerModel ?? 3, 1), 32);
   // Honor each target connection's own maxConcurrent ceiling (cached per dispatch)
   // so a low-concurrency subscription account is not flooded; falls back to the
   // combo-level concurrency when the connection has no positive cap.
@@ -2233,7 +2265,8 @@ async function handleRoundRobinCombo({
   const orderedTargets = resolveComboTargets(
     rrExpandedCombo,
     rrExpandedAllCombos,
-    clampComboDepth(config.maxComboDepth)
+    clampComboDepth(config.maxComboDepth),
+    hiddenModelsByProvider
   );
   const tagFilteredTargets = await applyRequestTagRouting(orderedTargets, body, log);
   const evalRankedTargets = orderTargetsByEvalScores(tagFilteredTargets, config.evalRouting, log);
@@ -2306,7 +2339,7 @@ async function handleRoundRobinCombo({
     combo,
     config,
     body,
-    resolveShadowTargets(combo, config, allCombos),
+    resolveShadowTargets(combo, config, allCombos, hiddenModelsByProvider),
     handleSingleModel,
     isModelAvailable,
     "round-robin",
@@ -2777,23 +2810,6 @@ async function handleRoundRobinCombo({
 
         // FIX 5: a local per-API-key token-limit 429 must not cool shared accounts.
         const isTokenLimitBreach = result.status === 429 && isTokenLimitBreachErrorBody(errorBody);
-        const isLocalQueueCapacity = isLocalQueueCapacityErrorBody(errorBody);
-
-        if (isLocalQueueCapacity) {
-          log.info(
-            "COMBO-RR",
-            `Local rate-limit queue capacity reached for ${modelStr} — returning without upstream fallback`
-          );
-          recordComboRequest(combo.name, modelStr, {
-            success: false,
-            latencyMs: Date.now() - startTime,
-            fallbackCount,
-            strategy: "round-robin",
-            target: toRecordedTarget(target),
-          });
-          recordedAttempts++;
-          return result;
-        }
 
         // Round-robin uses the same target-level fallback rule as other combo
         // strategies: non-ok target responses fall through to the next target.
@@ -3000,6 +3016,18 @@ async function handleRoundRobinCombo({
   }
 
   if (!lastStatus) {
+    if (recordedAttempts === 0) {
+      return new Response(
+        JSON.stringify({
+          error: {
+            message: "Service temporarily unavailable: all targets were skipped by pre-dispatch filters",
+            type: "service_unavailable",
+            code: "ALL_TARGETS_SKIPPED",
+          },
+        }),
+        { status: 503, headers: { "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({
         error: {
