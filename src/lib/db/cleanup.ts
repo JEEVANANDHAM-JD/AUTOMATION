@@ -178,7 +178,7 @@ export async function cleanupMcpAudit(): Promise<CleanupResult> {
   const result: CleanupResult = { deleted: 0, errors: 0 };
 
   try {
-    const stmt = db.prepare("DELETE FROM mcp_tool_audit WHERE timestamp < ?");
+    const stmt = db.prepare("DELETE FROM mcp_tool_audit WHERE created_at < ?");
     const runResult = stmt.run(cutoffISO);
     result.deleted = runResult.changes;
 
@@ -208,7 +208,7 @@ export async function cleanupA2aEvents(): Promise<CleanupResult> {
   const result: CleanupResult = { deleted: 0, errors: 0 };
 
   try {
-    const stmt = db.prepare("DELETE FROM a2a_task_events WHERE timestamp < ?");
+    const stmt = db.prepare("DELETE FROM a2a_task_events WHERE created_at < ?");
     const runResult = stmt.run(cutoffISO);
     result.deleted = runResult.changes;
 
