@@ -85,11 +85,11 @@ test("request log dates follow the active locale without duplicating rotated acc
 
 test("upstream proxy notifications preserve all four localized routing modes", () => {
   const source = readRepoFile(
-    "src/app/(dashboard)/dashboard/providers/[id]/hooks/useProviderConnections.ts"
+    "src/app/(dashboard)/dashboard/providers/[id]/providerConnectionText.ts"
   );
 
   for (const mode of ["native", "cliproxyapi", "dario", "fallback"]) {
-    assert.match(source, new RegExp(`\\b${mode}: providerText\\(`));
+    assert.match(source, new RegExp(`\\b${mode}:\\s*\\[`));
   }
   for (const key of [
     "cliproxyRoutingDisabled",

@@ -1073,9 +1073,7 @@ async function buildUnifiedModelsResponseCore(
     // here would discard all but the last segment and miss stored flags for
     // providers whose model IDs carry a sub-path (e.g. OpenRouter scoped models).
     const getSpecialtyModelRelativeId = (modelId: string, provider: string): string =>
-      modelId.startsWith(`${provider}/`)
-        ? modelId.slice(provider.length + 1)
-        : modelId;
+      modelId.startsWith(`${provider}/`) ? modelId.slice(provider.length + 1) : modelId;
 
     // Add embedding models (filtered by active providers)
     for (const embModel of getAllEmbeddingModels()) {
@@ -1113,6 +1111,7 @@ async function buildUnifiedModelsResponseCore(
         input_modalities: imgModel.inputModalities || ["text"],
         output_modalities: ["image"],
         ...(imgModel.description ? { description: imgModel.description } : {}),
+        ...(imgModel.mediaCapabilities ? { media_capabilities: imgModel.mediaCapabilities } : {}),
       });
     }
 
@@ -1178,6 +1177,12 @@ async function buildUnifiedModelsResponseCore(
         created: timestamp,
         owned_by: videoModel.provider,
         type: "video",
+        supported_sizes: videoModel.supportedSizes,
+        input_modalities: ["text"],
+        output_modalities: ["video"],
+        ...(videoModel.mediaCapabilities
+          ? { media_capabilities: videoModel.mediaCapabilities }
+          : {}),
       });
     }
 

@@ -967,7 +967,7 @@
   "disabled": "Đã tắt",
   "featureFlagOmnirouteEmergencyFallbackDescription": "Định tuyến các yêu cầu đã hết ngân sách đến nhà cung cấp/mô hình dự phòng khẩn cấp miễn phí.",
   "featureFlagArenaEloSyncEnabledDescription": "Bật đồng bộ ELO định kỳ từ bảng xếp hạng Arena AI để xếp hạng năng lực của mô hình.",
-  "featureFlagExposeCcDiscoveryAliasesDescription": "Công bố các id phản chiếu claude/&lt;provider&gt;/&lt;model&gt; trên /v1/models để tính năng khám phá mô hình qua gateway của Claude Code liệt kê được các mô hình không phải Claude. Cảnh báo: khi bật ở phạm vi toàn cục, số mục trong danh mục tăng gấp đôi với mọi client.",
+  "featureFlagExposeCcDiscoveryAliasesDescription": "Quảng bá các id phản chiếu claude/<provider>/<model> trên /v1/models để tính năng khám phá mô hình qua gateway của Claude Code liệt kê được các mô hình không phải Claude. Cảnh báo: khi bật ở phạm vi toàn cục, số mục trong danh mục tăng gấp đôi với mọi client.",
   "sidebar": {
     "home": "Trang chủ",
     "dashboard": "Trang tổng quan",
@@ -1271,7 +1271,9 @@
       "navigate": "điều hướng",
       "open": "mở",
       "close": "đóng"
-    }
+    },
+    "resilienceConnections": "Khả Năng Phục Hồi Kết Nối",
+    "resilienceConnectionsSubtitle": "Cooldown, cầu dao, trạng thái khóa"
   },
   "webhooks": {
     "title": "Webhook",
@@ -5361,7 +5363,7 @@
     "interceptionLoadError": "Không thể tải cài đặt chặn: {error}",
     "interceptionSaveError": "Không thể lưu cài đặt chặn: {error}",
     "ccAliasSectionTitle": "Hiển thị trong Claude Code (claude/…)",
-    "ccAliasSectionHint": "Công bố các mô hình của nhà cung cấp này dưới dạng id phản chiếu claude/&lt;provider&gt;/&lt;model&gt; để tính năng khám phá mô hình qua gateway của Claude Code có thể liệt kê chúng. Mặc định tắt — bật lên sẽ nhân đôi số mục trong danh mục với mọi client.",
+    "ccAliasSectionHint": "Quảng bá các mô hình của nhà cung cấp này dưới dạng id phản chiếu claude/<provider>/<model> để tính năng khám phá mô hình qua gateway của Claude Code có thể liệt kê chúng. Mặc định tắt — bật lên sẽ nhân đôi số mục trong danh mục với mọi client.",
     "ccAliasProviderLevelLabel": "Mặc định của nhà cung cấp",
     "ccAliasModelOverridesLabel": "Ghi đè theo từng mô hình",
     "ccAliasModelOverrideAriaLabel": "Ghi đè cho {modelId}",
@@ -5647,12 +5649,12 @@
     "newApiUserIdPlaceholder": "vd. 12345",
     "newApiUserIdHint": "Giá trị tiêu đề New-Api-User của AgentRouter, dùng cùng với khóa API console để lấy số dư hạn mức.",
     "newApiAggregatorToggleLabel": "Cổng tổng hợp",
-    "newApiAggregatorToggleHint": "Bật phát hiện số dư cho các node tổng hợp New-API / One-API / Sub2API. Bảng điều khiển sẽ hiển thị huy hiệu số dư và định tuyến quota-preflight sẽ bỏ qua các tài khoản đã cạn.",
-    "newApiAggregatorConsoleApiKeyHint": "System Access Token cho endpoint /api/user/self của bộ tổng hợp. Không phải khóa API định tuyến.",
-    "newApiAggregatorUserIdHint": "Giá trị header New-Api-User dùng để lấy số dư quota của người dùng bộ tổng hợp.",
-    "newApiAggregatorQuotaPerUnitLabel": "Quota mỗi đơn vị",
-    "newApiAggregatorQuotaPerUnitHint": "Số đơn vị tín dụng New-API cho mỗi 1 USD (mặc định: 500000). Ghi đè nếu bộ tổng hợp của bạn dùng tỷ lệ khác.",
-    "featureFlagNewApiAggregatorBalanceDescription": "Bật phát hiện số dư cho các node tương thích New-API / One-API / Sub2API",
+    "newApiAggregatorToggleHint": "Bật tính năng phát hiện số dư cho các node tổng hợp New-API / One-API / Sub2API. Bảng điều khiển sẽ hiển thị huy hiệu số dư và định tuyến kiểm tra hạn mức trước sẽ bỏ qua các tài khoản đã hết hạn mức.",
+    "newApiAggregatorConsoleApiKeyHint": "Token truy cập hệ thống cho endpoint /api/user/self của bộ tổng hợp. Không phải là khóa API định tuyến.",
+    "newApiAggregatorUserIdHint": "Giá trị tiêu đề New-Api-User dùng để lấy số dư hạn mức của người dùng bộ tổng hợp.",
+    "newApiAggregatorQuotaPerUnitLabel": "Hạn mức trên mỗi đơn vị",
+    "newApiAggregatorQuotaPerUnitHint": "Số đơn vị tín dụng New-API trên mỗi $1 (mặc định: 500000). Ghi đè nếu bộ tổng hợp của bạn sử dụng tỷ lệ khác.",
+    "featureFlagNewApiAggregatorBalanceDescription": "Bật tính năng phát hiện số dư cho các node tương thích với bộ tổng hợp New-API / One-API / Sub2API",
     "cpaModeDisabledTitle": "Chế độ tương thích CLIProxyAPI đã bị tắt",
     "cpaModeEnabledTitle": "Chế độ tương thích CLIProxyAPI đã được bật",
     "customUserAgentHint": "Gợi ý User Agent tùy chỉnh",
@@ -5768,7 +5770,7 @@
     "tagGroupPlaceholder": "Nhập nhóm thẻ...",
     "testModel": "Kiểm tra mô hình",
     "testingModel": "Đang kiểm tra mô hình",
-    "modelTestQuotaTooltip": "Đã hết quota — sẽ đặt lại vào ngày mai hoặc cần nạp thêm",
+    "modelTestQuotaTooltip": "Đã hết hạn mức — sẽ được đặt lại vào ngày mai hoặc cần nạp thêm",
     "toggleOffShort": "Tắt",
     "toggleOnShort": "Bật",
     "tokenExpiredBadge": "Nhãn token đã hết hạn",
@@ -6260,7 +6262,14 @@
     "rerankEndpoint": "Rerank",
     "savedModelEndpointSettings": "Đã lưu cài đặt endpoint mô hình",
     "searchByModelAria": "Tìm kiếm theo mô hình",
-    "selectSupportedEndpoint": "Chọn ít nhất một endpoint được hỗ trợ"
+    "selectSupportedEndpoint": "Chọn ít nhất một endpoint được hỗ trợ",
+    "anonymousFallbackTitle": "Dự phòng ẩn danh",
+    "anonymousFallbackDesc": "Khi tất cả kết nối đã cấu hình đều cạn kiệt (hạn ngạch, tín dụng hoặc hết hạn), hãy tạm thời sử dụng tầng không cần khóa của nhà cung cấp này. Tắt tùy chọn này để bỏ qua nhà cung cấp thay vì gửi yêu cầu ẩn danh — khuyến nghị khi tầng không cần khóa từ chối các yêu cầu đó (401).",
+    "anonymousFallbackEnabled": "Đã bật dự phòng ẩn danh cho {provider}",
+    "anonymousFallbackDisabled": "Đã tắt dự phòng ẩn danh cho {provider} — các kết nối đã cạn kiệt sẽ bỏ qua nhà cung cấp này",
+    "anonymousFallbackUpdateFailed": "Không thể cập nhật cài đặt dự phòng ẩn danh",
+    "webSessionGuideStep2Fast": "Cách nhanh: cài đặt tiện ích Cookie Editor (chromewebstore.google.com → Cookie Editor), mở tiện ích trong thẻ {provider}, tìm {credential} (chọn tất cả các phần được đánh số nếu bị chia nhỏ), rồi nhấp Export → Copy với định dạng xuất là “Cookie header”.",
+    "webSessionGuideStep3Manual": "Cách thủ công: mở công cụ dành cho nhà phát triển của trình duyệt (F12 → Network), tải lại trang, mở một yêu cầu đã xác thực và sao chép giá trị tiêu đề Cookie trong Request Headers — bỏ tiền tố Cookie:."
   },
   "settings": {
     "title": "Cài đặt",
@@ -8194,6 +8203,10 @@
       },
       "minMessageLength": {
         "label": "Độ dài tin nhắn tối thiểu"
+      },
+      "compressToolResults": {
+        "label": "Chủ động rút gọn kết quả công cụ dài",
+        "description": "Rút gọn các kết quả công cụ dài hơn 2.000 ký tự trong quá trình nén Lite. Cơ chế bảo vệ tràn khẩn cấp vẫn có thể cắt bớt nội dung khi ngữ cảnh vượt quá ngân sách của mô hình."
       }
     },
     "engineFields": {
@@ -10726,6 +10739,8 @@
     "copied": "Đã sao chép!",
     "run": "Chạy",
     "running": "Đang chạy...",
+    "loading": "Đang tải...",
+    "retry": "Thử lại",
     "response": "Phản hồi",
     "tunnel": "Đường hầm",
     "send": "Gửi",
@@ -13273,5 +13288,99 @@
     "relayDescription": "Các endpoint proxy relay serverless cho hạ tầng AI của bạn",
     "trafficInspectorTitle": "Traffic Inspector — OmniRoute",
     "trafficInspectorDescription": "Theo dõi các lệnh gọi LLM và gỡ lỗi lưu lượng HTTPS của mọi ứng dụng"
+  },
+  "resilienceConnections": {
+    "title": "Khả Năng Phục Hồi Kết Nối",
+    "table": {
+      "status": "Trạng Thái",
+      "provider": "Nhà Cung Cấp",
+      "connectionId": "Kết Nối",
+      "authType": "Xác Thực",
+      "backoffLevel": "Trì Hoãn",
+      "cooldown": "Cooldown",
+      "lastError": "Lỗi Gần Nhất",
+      "lockouts": "Khóa",
+      "healthy": "Khỏe Mạnh",
+      "coolingDown": "Cooldown",
+      "circuitOpen": "Mạch Mở",
+      "recovering": "Đang Phục Hồi",
+      "degraded": "Suy Giảm",
+      "terminal": "Kết Thúc",
+      "unknown": "Không Xác Định",
+      "never": "-"
+    },
+    "timeline": {
+      "title": "Chuyển Đổi Cầu Dao",
+      "window": "Cửa Sổ",
+      "window1h": "1g",
+      "window6h": "6g",
+      "window24h": "24g",
+      "empty": "Không có chuyển đổi trong cửa sổ đã chọn",
+      "currentState": "Trạng Thái Hiện Tại",
+      "state": {
+        "open": "Mở",
+        "half_open": "Nửa Mở",
+        "closed": "Đóng",
+        "degraded": "Suy Giảm"
+      },
+      "reason": {
+        "timeout-elapsed": "Hết Thời Gian Chờ",
+        "success-recovery": "Phục Hồi do Thành Công",
+        "manual-reset": "Đặt Lại Thủ Công",
+        "probe-success": "Thăm Dò Thành Công",
+        "recovery": "Phục Hồi",
+        "probe-failed": "Thăm Dò Thất Bại"
+      }
+    },
+    "detail": {
+      "title": "Chi Tiết Kết Nối",
+      "metadata": "Siêu Dữ Liệu",
+      "cooldown": "Cooldown",
+      "lastError": "Lỗi Gần Nhất",
+      "breaker": "Cầu Dao Mạch",
+      "lockouts": "Khóa Mô Hình",
+      "rateLimitedUntil": "Giới Hạn Tốc Độ Đến",
+      "backoffLevel": "Mức Trì Hoãn",
+      "remaining": "Còn Lại",
+      "noLockouts": "Không có khóa hoạt động",
+      "provider": "Nhà Cung Cấp",
+      "id": "ID",
+      "authType": "Loại Xác Thực",
+      "priority": "Ưu Tiên",
+      "isActive": "Hoạt Động",
+      "errorCode": "Mã Lỗi",
+      "lastErrorAt": "Lỗi Gần Nhất Lúc",
+      "yes": "Có",
+      "no": "Không",
+      "close": "Đóng",
+      "never": "-",
+      "failureCount": "Số Lần Thất Bại",
+      "retryAfterMs": "Thử Lại Sau (ms)",
+      "lastFailureKind": "Loại Thất Bại Gần Nhất"
+    },
+    "empty": {
+      "title": "Không có kết nối",
+      "description": "Kết nối nhà cung cấp sẽ hiển thị ở đây."
+    },
+    "loading": {
+      "title": "Đang Tải",
+      "description": "Đang lấy trạng thái khả năng phục hồi kết nối..."
+    },
+    "summary": {
+      "total": "{count} kết nối",
+      "coolingDown": "{count} đang cooldown",
+      "unhealthyBreakers": "{count} cầu dao chưa đóng",
+      "capped": "hiển thị 1000 mục đầu tiên"
+    },
+    "pollingNote": "Lưu ý: xem trang này sẽ kích hoạt phục hồi chậm của cầu dao (thăm dò HALF_OPEN). Làm mới mỗi 30 giây.",
+    "retry": "Thử Lại",
+    "pollErrorLocalOnly": "Trang này chỉ có thể truy cập từ localhost hoặc LAN (LOCAL_ONLY).",
+    "pollErrorStopped": "Đã dừng thăm dò: máy chủ đã từ chối yêu cầu (404/403).",
+    "pollErrorTransient": "Lỗi khi lấy dữ liệu: tự động thử lại.",
+    "degraded": "Dữ liệu một phần: nguồn không khả dụng: {sources}",
+    "degraded.source.database": "Cơ Sở Dữ Liệu",
+    "degraded.source.circuitBreaker": "Cầu Dao Mạch",
+    "degraded.source.modelLockouts": "Khóa Mô Hình",
+    "degraded.source.count": "Số Lượng Kết Nối"
   }
 }

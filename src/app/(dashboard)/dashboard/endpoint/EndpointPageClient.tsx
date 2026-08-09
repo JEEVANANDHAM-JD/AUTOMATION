@@ -534,10 +534,7 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
       if (!cloudConfigured) {
         setCloudStatus({
           type: "warning",
-          message: translateOrFallback(
-            "cloudSyncNotConfigured",
-            "Cloud sync is not configured on this instance."
-          ),
+          message: t("cloudSyncNotConfigured"),
         });
         return;
       }
