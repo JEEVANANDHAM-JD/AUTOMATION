@@ -79,7 +79,13 @@ export const VIDEO_PROVIDERS: Record<string, VideoProvider> = {
     authType: "apikey",
     authHeader: "key",
     format: "fal-ai-video",
-    models: [{ id: "veo3.1/lite", name: "Veo 3.1 Lite" }],
+    models: [
+      { id: "veo3.1/lite", name: "Veo 3.1 Lite" },
+      {
+        id: "xai/grok-imagine-video/text-to-video",
+        name: "Grok Imagine Video",
+      },
+    ],
   },
 
   googleflow: {
