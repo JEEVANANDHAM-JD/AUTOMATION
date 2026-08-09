@@ -55,12 +55,7 @@ function buildRoot(rootDir: string): void {
     },
     { "dist/index.js": "export const llmlingua = true;\n" }
   );
-  mkPkg(
-    rootNm,
-    "es-toolkit",
-    { main: "index.js" },
-    { "index.js": "export const esToolkit = true;\n" }
-  );
+  mkPkg(rootNm, "es-toolkit", { main: "index.js" }, { "index.js": "export const esToolkit = true;\n" });
   mkPkg(
     rootNm,
     "@tensorflow/tfjs",

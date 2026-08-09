@@ -1,12 +1,4 @@
-export function HeroStat({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: number;
-  accent?: string;
-}) {
+export function HeroStat({ label, value, accent }: { label: string; value: number; accent?: string }) {
   return (
     <div className="text-center">
       <div className="text-[10px] uppercase tracking-wide text-text-muted font-semibold truncate">

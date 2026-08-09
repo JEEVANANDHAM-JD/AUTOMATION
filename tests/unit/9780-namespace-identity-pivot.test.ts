@@ -9,8 +9,9 @@ import assert from "node:assert/strict";
 
 await import("../../open-sse/translator/bootstrap.ts");
 const { translateRequest, initState } = await import("../../open-sse/translator/index.ts");
-const { openaiToOpenAIResponsesResponse } =
-  await import("../../open-sse/translator/response/openai-responses.ts");
+const { openaiToOpenAIResponsesResponse } = await import(
+  "../../open-sse/translator/response/openai-responses.ts"
+);
 const { FORMATS } = await import("../../open-sse/translator/formats.ts");
 
 type NamespaceIdentity = { namespace: string; name: string };

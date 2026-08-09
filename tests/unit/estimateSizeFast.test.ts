@@ -98,10 +98,7 @@ test("estimateSizeFast respects a caller-supplied byteLimit above the 256KB defa
     trueTotal,
     "must report the true accumulated size instead of early-exiting at the default 256KB"
   );
-  assert.ok(
-    withCustomLimit <= oneMiB,
-    "payload must be recognized as under the caller's own limit"
-  );
+  assert.ok(withCustomLimit <= oneMiB, "payload must be recognized as under the caller's own limit");
 });
 
 test("estimateSizeFast node-budget fail-closed return respects a caller-supplied byteLimit", () => {

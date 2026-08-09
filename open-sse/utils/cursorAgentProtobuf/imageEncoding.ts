@@ -1,5 +1,10 @@
 import crypto from "node:crypto";
-import { encodeBytes, encodeMessage, encodeString, encodeUInt32Field } from "./wire.ts";
+import {
+  encodeBytes,
+  encodeMessage,
+  encodeString,
+  encodeUInt32Field,
+} from "./wire.ts";
 
 const SI_UUID = 2;
 const SI_PATH = 3;

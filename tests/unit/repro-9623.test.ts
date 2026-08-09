@@ -23,13 +23,19 @@ test("#9623 fix: non-terminal test failure sets a future rateLimitedUntil", () =
         : null
       : new Date(now + testFailureCooldownMs).toISOString();
 
-  assert.ok(rateLimitedUntil !== null, "non-terminal failure should set a future rateLimitedUntil");
+  assert.ok(
+    rateLimitedUntil !== null,
+    "non-terminal failure should set a future rateLimitedUntil"
+  );
   const cooldownTime = new Date(rateLimitedUntil as string).getTime();
   assert.ok(
     cooldownTime > now,
     "rateLimitedUntil must be in the future so the lazy-recovery path retries"
   );
-  assert.ok(cooldownTime <= now + 30_000, "cooldown should be bounded (30s)");
+  assert.ok(
+    cooldownTime <= now + 30_000,
+    "cooldown should be bounded (30s)"
+  );
 });
 
 test("#9623 guard: terminal failures stay terminal (no fake recovery)", () => {

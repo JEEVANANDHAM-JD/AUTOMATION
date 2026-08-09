@@ -58,12 +58,7 @@ function makeToolCallStreamWithBenignError(): Response {
           index: 0,
           delta: {
             tool_calls: [
-              {
-                index: 0,
-                id: "call_1",
-                type: "function",
-                function: { name: "Bash", arguments: "" },
-              },
+              { index: 0, id: "call_1", type: "function", function: { name: "Bash", arguments: "" } },
             ],
           },
           finish_reason: null,
@@ -112,12 +107,7 @@ test("OpenAI stream with tool_calls + benign empty error:'' field is VALID", asy
           index: 0,
           delta: {
             tool_calls: [
-              {
-                index: 0,
-                id: "call_2",
-                type: "function",
-                function: { name: "Read", arguments: "" },
-              },
+              { index: 0, id: "call_2", type: "function", function: { name: "Read", arguments: "" } },
             ],
           },
           finish_reason: null,
@@ -173,9 +163,5 @@ test("Stream with a REAL non-empty error object is still flagged as invalid", as
     false,
     `expected invalid for real error object, got valid=true (reason: ${out.reason})`
   );
-  assert.match(
-    out.reason ?? "",
-    /streaming upstream error/,
-    "reason should mention the upstream error"
-  );
+  assert.match(out.reason ?? "", /streaming upstream error/, "reason should mention the upstream error");
 });

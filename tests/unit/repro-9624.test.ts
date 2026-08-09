@@ -7,7 +7,10 @@ import { dirname, resolve } from "node:path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const INSTRUMENTATION_NODE_PATH = resolve(__dirname, "../../src/instrumentation-node.ts");
+const INSTRUMENTATION_NODE_PATH = resolve(
+  __dirname,
+  "../../src/instrumentation-node.ts"
+);
 
 describe("repro-9624: startCleanupScheduler wired in Next.js startup path", () => {
   it("should import startCleanupScheduler from cleanup", () => {
@@ -19,14 +22,19 @@ describe("repro-9624: startCleanupScheduler wired in Next.js startup path", () =
     //     import("@/lib/db/cleanup"), ...
     //   ]);
     // So the binding and the module import appear separately in the file.
-    const cleanupModuleImported = /import\(\s*["']@\/lib\/db\/cleanup["']\s*\)/.test(source);
+    const cleanupModuleImported = /import\(\s*["']@\/lib\/db\/cleanup["']\s*\)/.test(
+      source
+    );
     const schedulerBound = /\bstartCleanupScheduler\b/.test(source);
 
     assert.ok(
       cleanupModuleImported,
       "@/lib/db/cleanup should be imported (dynamic import) in instrumentation-node.ts"
     );
-    assert.ok(schedulerBound, "startCleanupScheduler should be bound in instrumentation-node.ts");
+    assert.ok(
+      schedulerBound,
+      "startCleanupScheduler should be bound in instrumentation-node.ts"
+    );
   });
 
   it("should call startCleanupScheduler() during startup", () => {
@@ -36,6 +44,9 @@ describe("repro-9624: startCleanupScheduler wired in Next.js startup path", () =
     // It can be called directly or as part of a conditional.
     const hasCall = /\bstartCleanupScheduler\s*\(/.test(source);
 
-    assert.ok(hasCall, "startCleanupScheduler() should be called in instrumentation-node.ts");
+    assert.ok(
+      hasCall,
+      "startCleanupScheduler() should be called in instrumentation-node.ts"
+    );
   });
 });

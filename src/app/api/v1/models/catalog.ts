@@ -1073,7 +1073,9 @@ async function buildUnifiedModelsResponseCore(
     // here would discard all but the last segment and miss stored flags for
     // providers whose model IDs carry a sub-path (e.g. OpenRouter scoped models).
     const getSpecialtyModelRelativeId = (modelId: string, provider: string): string =>
-      modelId.startsWith(`${provider}/`) ? modelId.slice(provider.length + 1) : modelId;
+      modelId.startsWith(`${provider}/`)
+        ? modelId.slice(provider.length + 1)
+        : modelId;
 
     // Add embedding models (filtered by active providers)
     for (const embModel of getAllEmbeddingModels()) {

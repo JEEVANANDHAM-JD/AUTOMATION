@@ -709,8 +709,7 @@ export async function testSingleConnection(connectionId: string, validationModel
   // failures a short cooldown so the lazy-recovery path retries them.
   const terminalTestStatuses = new Set(["banned", "expired", "credits_exhausted"]);
   const isTerminalFailure =
-    !result.valid &&
-    terminalTestStatuses.has(String(diagnosis.code ?? diagnosis.type ?? "").toLowerCase());
+    !result.valid && terminalTestStatuses.has(String(diagnosis.code ?? diagnosis.type ?? "").toLowerCase());
   const testFailureCooldownMs = result.valid ? 0 : 30_000; // 30s retry window
 
   const updateData: Record<string, any> = {

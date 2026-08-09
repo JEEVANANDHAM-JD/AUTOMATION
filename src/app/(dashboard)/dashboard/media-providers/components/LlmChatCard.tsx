@@ -395,9 +395,7 @@ export function LlmChatCard({
               disabled={loading}
               className="min-w-0 flex-1 rounded-md border border-border bg-bg-subtle text-xs px-2 py-1 text-text-main focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60"
             >
-              {modelOptions.length === 0 && !loading && (
-                <option value="">{initialModel || "—"}</option>
-              )}
+              {modelOptions.length === 0 && !loading && <option value="">{initialModel || "—"}</option>}
               {loading && <option value="">{t("loading") ?? "Loading…"}</option>}
               {modelOptions.map((m) => (
                 <option key={m.id} value={m.id}>
