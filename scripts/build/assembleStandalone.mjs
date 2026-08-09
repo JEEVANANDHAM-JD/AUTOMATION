@@ -48,10 +48,7 @@
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "node:path";
-import {
-  colocateLlmlinguaOptionals,
-  SEED_PACKAGES,
-} from "./colocateOptionals.mjs";
+import { colocateLlmlinguaOptionals, SEED_PACKAGES } from "./colocateOptionals.mjs";
 
 /**
  * Check whether a path exists (async).
@@ -88,6 +85,15 @@ const NATIVE_ASSET_ENTRIES = [
     label: "better-sqlite3 native binary",
     src: ["node_modules", "better-sqlite3", "build"],
     dest: ["node_modules", "better-sqlite3", "build"],
+  },
+  {
+    // #8847: Bun (and npx -g global installs) resolve better-sqlite3's native
+    // binary from prebuilds/ instead of build/Release/, so the compiled build/
+    // copy alone leaves a hollow package that falls back to sql.js (OOM under
+    // Bun). Ship the prebuilds alongside the compiled binary.
+    label: "better-sqlite3 prebuilds (Bun / global installs)",
+    src: ["node_modules", "better-sqlite3", "prebuilds"],
+    dest: ["node_modules", "better-sqlite3", "prebuilds"],
   },
   {
     // TPROXY IP_TRANSPARENT addon (Fase 3 / Epic A). Built by build-tproxy-native
@@ -750,8 +756,7 @@ export function assembleStandalone({
       rootDir: projectRoot,
       targetNodeModulesDir: path.join(resolvedOutDir, "node_modules"),
       seeds: [...SEED_PACKAGES, "@huggingface/transformers"],
-      log: (message) =>
-        console.log(`[assembleStandalone] ${message.trim()}`),
+      log: (message) => console.log(`[assembleStandalone] ${message.trim()}`),
     });
   }
 

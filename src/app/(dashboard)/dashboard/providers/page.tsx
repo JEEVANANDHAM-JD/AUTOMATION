@@ -12,7 +12,7 @@ import {
 } from "@/shared/constants/providers";
 import { partitionNoAuthEntriesByBlocked } from "@/shared/utils/noAuthProviders";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getErrorCode, getRelativeTime } from "@/shared/utils";
+import { getRelativeTime } from "@/shared/utils";
 import {
   isProviderConnectionConnected,
   isProviderConnectionErrored,
@@ -57,6 +57,8 @@ import {
   buildCompactProviderEntriesForPage,
   getCompactProviderAuthType,
 } from "./providerCompactMode";
+import { getConnectionErrorTag } from "./providerListText";
+import { providerText, type ProviderMessageTranslator } from "./[id]/providerPageHelpers";
 
 type DashboardProviderInfo = {
   id?: string;
@@ -92,28 +94,6 @@ function providerEntryHasFree(entry: DashboardProviderEntry): boolean {
   return entry.provider.hasFree === true;
 }
 
-type ProviderMessageTranslator = ((key: string, values?: Record<string, unknown>) => string) & {
-  has?: (key: string) => boolean;
-};
-
-function providerText(
-  t: ProviderMessageTranslator,
-  key: string,
-  fallback: string,
-  values?: Record<string, unknown>
-): string {
-  if (typeof t.has === "function" && t.has(key)) {
-    return t(key, values);
-  }
-  if (values) {
-    return Object.entries(values).reduce(
-      (acc, [name, value]) => acc.replaceAll(`{${name}}`, String(value)),
-      fallback
-    );
-  }
-  return fallback;
-}
-
 type ProviderBatchTestResult = {
   connectionId?: string;
   connectionName?: string;
@@ -133,54 +113,6 @@ type ProviderBatchTestResults = {
   };
   error?: string | { message?: string };
 };
-
-function getConnectionErrorTag(connection, t: ProviderMessageTranslator) {
-  if (!connection) return null;
-
-  const explicitType = connection.lastErrorType;
-  if (explicitType === "runtime_error") return providerText(t, "errorTypeRuntime", "Runtime");
-  if (
-    explicitType === "upstream_auth_error" ||
-    explicitType === "auth_missing" ||
-    explicitType === "token_refresh_failed" ||
-    explicitType === "token_expired"
-  ) {
-    return providerText(t, "errorTypeUpstreamAuth", "Auth");
-  }
-  if (explicitType === "upstream_rate_limited") {
-    return providerText(t, "errorTypeRateLimited", "Rate limited");
-  }
-  if (explicitType === "upstream_unavailable") {
-    return providerText(t, "errorTypeUpstreamUnavailable", "Server error");
-  }
-  if (explicitType === "network_error") {
-    return providerText(t, "errorTypeNetworkError", "Network");
-  }
-
-  const numericCode = Number(connection.errorCode);
-  if (Number.isFinite(numericCode) && numericCode >= 400) {
-    return String(numericCode);
-  }
-
-  const fromMessage = getErrorCode(connection.lastError);
-  if (fromMessage === "401" || fromMessage === "403") {
-    return providerText(t, "errorTypeUpstreamAuth", "Auth");
-  }
-  if (fromMessage && fromMessage !== "ERR") return fromMessage;
-
-  const msg = (connection.lastError || "").toLowerCase();
-  if (msg.includes("runtime") || msg.includes("not runnable") || msg.includes("not installed"))
-    return providerText(t, "errorTypeRuntime", "Runtime");
-  if (
-    msg.includes("invalid api key") ||
-    msg.includes("token invalid") ||
-    msg.includes("revoked") ||
-    msg.includes("unauthorized")
-  )
-    return providerText(t, "errorTypeUpstreamAuth", "Auth");
-
-  return "ERR";
-}
 
 export default function ProvidersPage() {
   const router = useRouter();

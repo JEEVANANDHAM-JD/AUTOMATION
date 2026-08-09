@@ -8,14 +8,11 @@
  *  - connections / providerNode / loading state
  *  - fetchConnections (with compatible-node retry logic)
  *  - batch activate / deactivate / retest / delete (with MAX_BULK_IDS chunking)
- *  - single-connection handlers: delete, update status, proxy toggles,
- *    rate-limit, claude extra-usage, codex limit, cpa mode,
- *    retest, token refresh, swap priority
+ *  - single-connection handlers for status, quotas, proxies, retries, and priority
  *  - selection state: selectedIds, handleToggleSelectOne/All, batchDeleteConfirmOpen
  *  - batch-test runner (runBatchTest / handleBatchTestAll / handleBatchRetest)
  *  - health/pagination filters (healthFilter, page)
- *  - proxy/distribution helpers (loadConnProxies, handleDistributeProxies,
- *    toggleProxyEnabled, togglePerKeyProxyEnabled)
+ *  - proxy loading, distribution, and per-connection toggles
  *
  * The hook is cycle-safe: it imports only from leaf modules (@/store, @/shared,
  * providers constants) — never from ProviderDetailPageClient.
@@ -31,6 +28,15 @@ import {
   getProviderConnectionsRequestUrl,
 } from "../../providerPageUtils";
 import { normalizeCodexLimitPolicy, providerText } from "../providerPageHelpers";
+import {
+  claudeExtraUsageUpdatedText,
+  claudeExtraUsageUpdateFailedText,
+  codexLimitUpdateFailedText,
+  upstreamProxyModeUpdatedText,
+  upstreamProxyUpdateFailedText,
+  type UpstreamProxyFallbackBackend,
+  type UpstreamProxyMode,
+} from "../providerConnectionText";
 import { useProviderQuotaVisibility } from "./useProviderQuotaVisibility";
 import { useReorderByAvailability } from "./useReorderByAvailability";
 import {
@@ -51,9 +57,6 @@ const PAGE_SIZE = 50;
  * via `fallbackBackend` on failure. Mirrors the `mode` enum in
  * src/app/api/upstream-proxy/[providerId]/route.ts.
  */
-export type UpstreamProxyMode = "native" | "cliproxyapi" | "dario" | "fallback";
-export type UpstreamProxyFallbackBackend = "cliproxyapi" | "dario";
-
 export type BatchTestResults = {
   error: string | null;
   results: any[];
@@ -399,14 +402,7 @@ export function useProviderConnections(
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        notify.error(
-          data.error ||
-            providerText(
-              t,
-              "failedUpdateClaudeExtraUsagePolicy",
-              "Failed to update Claude extra-usage policy"
-            )
-        );
+        notify.error(data.error || claudeExtraUsageUpdateFailedText(t));
         return;
       }
 
@@ -434,28 +430,10 @@ export function useProviderConnections(
             : connection
         )
       );
-      notify.success(
-        enabled
-          ? providerText(
-              t,
-              "claudeExtraUsageBlockingEnabled",
-              "Claude extra-usage blocking enabled (extra usage will be blocked)"
-            )
-          : providerText(
-              t,
-              "claudeExtraUsageBlockingDisabled",
-              "Claude extra-usage blocking disabled (extra usage is allowed)"
-            )
-      );
+      notify.success(claudeExtraUsageUpdatedText(t, enabled));
     } catch (error) {
       console.error("Error toggling Claude extra-usage policy:", error);
-      notify.error(
-        providerText(
-          t,
-          "failedUpdateClaudeExtraUsagePolicy",
-          "Failed to update Claude extra-usage policy"
-        )
-      );
+      notify.error(claudeExtraUsageUpdateFailedText(t));
     }
   };
 
@@ -489,10 +467,7 @@ export function useProviderConnections(
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        notify.error(
-          data.error ||
-            providerText(t, "failedUpdateCodexLimitPolicy", "Failed to update Codex limit policy")
-        );
+        notify.error(data.error || codexLimitUpdateFailedText(t));
         return;
       }
 
@@ -512,33 +487,8 @@ export function useProviderConnections(
       notify.success(providerText(t, "codexLimitPolicyUpdated", "Codex limit policy updated"));
     } catch (error) {
       console.error("Error toggling Codex quota policy:", error);
-      notify.error(
-        providerText(t, "failedUpdateCodexLimitPolicy", "Failed to update Codex limit policy")
-      );
+      notify.error(codexLimitUpdateFailedText(t));
     }
-  };
-
-  const upstreamProxyModeMessages: Record<UpstreamProxyMode, string> = {
-    native: providerText(
-      t,
-      "cliproxyRoutingDisabled",
-      "Requests now use native OmniRoute (direct)"
-    ),
-    cliproxyapi: providerText(
-      t,
-      "cliproxyRoutingEnabled",
-      "Requests now route through CLIProxyAPI (deeper emulation)"
-    ),
-    dario: providerText(
-      t,
-      "darioRoutingEnabled",
-      "Requests now route through Dario (Claude subscription proxy)"
-    ),
-    fallback: providerText(
-      t,
-      "upstreamProxyFallbackEnabled",
-      "Requests try native first, retrying via the configured backend on failure"
-    ),
   };
 
   const handleSetUpstreamProxyMode = async (
@@ -560,14 +510,7 @@ export function useProviderConnections(
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        notify.error(
-          data.error ||
-            providerText(
-              t,
-              "failedUpdateUpstreamProxyRouting",
-              "Failed to update upstream proxy routing"
-            )
-        );
+        notify.error(data.error || upstreamProxyUpdateFailedText(t));
         return;
       }
 
@@ -575,15 +518,9 @@ export function useProviderConnections(
       if (mode === "fallback" && fallbackBackend) {
         setUpstreamProxyFallbackBackendState(fallbackBackend);
       }
-      notify.success(upstreamProxyModeMessages[mode]);
+      notify.success(upstreamProxyModeUpdatedText(t, mode));
     } catch {
-      notify.error(
-        providerText(
-          t,
-          "failedUpdateUpstreamProxyRouting",
-          "Failed to update upstream proxy routing"
-        )
-      );
+      notify.error(upstreamProxyUpdateFailedText(t));
     }
   };
 

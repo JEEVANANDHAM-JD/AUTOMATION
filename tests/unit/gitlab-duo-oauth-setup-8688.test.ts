@@ -69,9 +69,13 @@ test("#8688 OAuthModal skips auto-start and renders GitlabDuoSetupStep (#8688)",
   );
 
   const setup = read("../../src/shared/components/oauthModal/GitlabDuoSetupStep.tsx");
-  assert.match(setup, /GITLAB_DUO_OAUTH_SETUP_MESSAGE/);
+  assert.match(setup, /useTranslations\("oauthModal"\)/);
+  assert.match(setup, /t\("gitlabDuoSetupMessage"/);
+  assert.match(setup, /GITLAB_DUO_OAUTH_APPLICATIONS_URL/);
+  assert.match(setup, /GITLAB_DUO_OAUTH_DEFAULT_REDIRECT_URI/);
+  assert.match(setup, /GITLAB_DUO_OAUTH_SCOPES/);
   assert.match(setup, /LinkifiedText/);
-  assert.match(setup, /Continue/);
+  assert.match(setup, /t\("continue"\)/);
 });
 
 test("#8688 error Try Again returns gitlab-duo to the setup step", () => {
@@ -82,8 +86,5 @@ test("#8688 error Try Again returns gitlab-duo to the setup step", () => {
   const errorStep = read("../../src/shared/components/oauthModal/OAuthErrorStep.tsx");
   assert.match(errorStep, /returnToGitlabDuoSetup/);
   assert.match(errorStep, /onReturnToGitlabDuoSetup/);
-  assert.match(
-    errorStep,
-    /if \(returnToGitlabDuoSetup\)[\s\S]{0,80}?onReturnToGitlabDuoSetup\(\)/
-  );
+  assert.match(errorStep, /if \(returnToGitlabDuoSetup\)[\s\S]{0,80}?onReturnToGitlabDuoSetup\(\)/);
 });
