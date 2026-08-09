@@ -12,7 +12,7 @@ import {
 } from "@/shared/constants/providers";
 import { partitionNoAuthEntriesByBlocked } from "@/shared/utils/noAuthProviders";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getErrorCode, getRelativeTime } from "@/shared/utils";
+import { getRelativeTime } from "@/shared/utils";
 import {
   isProviderConnectionConnected,
   isProviderConnectionErrored,
@@ -57,6 +57,8 @@ import {
   buildCompactProviderEntriesForPage,
   getCompactProviderAuthType,
 } from "./providerCompactMode";
+import { getConnectionErrorTag } from "./providerListText";
+import { providerText, type ProviderMessageTranslator } from "./[id]/providerPageHelpers";
 
 type DashboardProviderInfo = {
   id?: string;
@@ -92,28 +94,6 @@ function providerEntryHasFree(entry: DashboardProviderEntry): boolean {
   return entry.provider.hasFree === true;
 }
 
-type ProviderMessageTranslator = ((key: string, values?: Record<string, unknown>) => string) & {
-  has?: (key: string) => boolean;
-};
-
-function providerText(
-  t: ProviderMessageTranslator,
-  key: string,
-  fallback: string,
-  values?: Record<string, unknown>
-): string {
-  if (typeof t.has === "function" && t.has(key)) {
-    return t(key, values);
-  }
-  if (values) {
-    return Object.entries(values).reduce(
-      (acc, [name, value]) => acc.replaceAll(`{${name}}`, String(value)),
-      fallback
-    );
-  }
-  return fallback;
-}
-
 type ProviderBatchTestResult = {
   connectionId?: string;
   connectionName?: string;
@@ -133,46 +113,6 @@ type ProviderBatchTestResults = {
   };
   error?: string | { message?: string };
 };
-
-function getConnectionErrorTag(connection) {
-  if (!connection) return null;
-
-  const explicitType = connection.lastErrorType;
-  if (explicitType === "runtime_error") return "Runtime";
-  if (
-    explicitType === "upstream_auth_error" ||
-    explicitType === "auth_missing" ||
-    explicitType === "token_refresh_failed" ||
-    explicitType === "token_expired"
-  ) {
-    return "Auth";
-  }
-  if (explicitType === "upstream_rate_limited") return "Rate limited";
-  if (explicitType === "upstream_unavailable") return "Server error";
-  if (explicitType === "network_error") return "Network";
-
-  const numericCode = Number(connection.errorCode);
-  if (Number.isFinite(numericCode) && numericCode >= 400) {
-    return String(numericCode);
-  }
-
-  const fromMessage = getErrorCode(connection.lastError);
-  if (fromMessage === "401" || fromMessage === "403") return "Auth";
-  if (fromMessage && fromMessage !== "ERR") return fromMessage;
-
-  const msg = (connection.lastError || "").toLowerCase();
-  if (msg.includes("runtime") || msg.includes("not runnable") || msg.includes("not installed"))
-    return "Runtime";
-  if (
-    msg.includes("invalid api key") ||
-    msg.includes("token invalid") ||
-    msg.includes("revoked") ||
-    msg.includes("unauthorized")
-  )
-    return "Auth";
-
-  return "ERR";
-}
 
 export default function ProvidersPage() {
   const router = useRouter();
@@ -355,7 +295,7 @@ export default function ProvidersPage() {
       (a: any, b: any) =>
         (new Date(b.lastErrorAt || 0) as any) - (new Date(a.lastErrorAt || 0) as any)
     )[0];
-    const errorCode = latestError ? getConnectionErrorTag(latestError) : null;
+    const errorCode = latestError ? getConnectionErrorTag(latestError, t) : null;
     const errorTime = latestError?.lastErrorAt ? getRelativeTime(latestError.lastErrorAt) : null;
 
     // Check expirations
@@ -826,11 +766,14 @@ export default function ProvidersPage() {
                 <span className="material-symbols-outlined text-[32px] text-primary">dns</span>
               </div>
               <h2 className="text-xl font-semibold text-text-main">
-                {t("addFirstProvider") || "Add your first provider"}
+                {providerText(t, "addFirstProvider", "Add your first provider")}
               </h2>
               <p className="text-sm text-text-muted mt-2 max-w-md">
-                {t("addFirstProviderDesc") ||
-                  "Connect an AI provider to start routing requests through OmniRoute. You can use free providers, API keys, or OAuth accounts."}
+                {providerText(
+                  t,
+                  "addFirstProviderDesc",
+                  "Connect an AI provider to start routing requests through OmniRoute. You can use free providers, API keys, or OAuth accounts."
+                )}
               </p>
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                 <Button icon="add" onClick={() => router.push("/dashboard/providers/new")}>
@@ -843,7 +786,7 @@ export default function ProvidersPage() {
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg border border-border text-text-muted hover:text-text-main hover:bg-bg-subtle transition-colors"
                 >
                   <span className="material-symbols-outlined text-[16px]">help</span>
-                  {t("learnMore") || "Learn more"}
+                  {providerText(t, "learnMore", "Learn more")}
                 </a>
               </div>
             </div>
@@ -1102,10 +1045,10 @@ export default function ProvidersPage() {
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold flex items-center gap-2 flex-1 min-w-0">
-                    {t("ideProviders") || "IDE Providers"}{" "}
+                    {providerText(t, "ideProviders", "IDE Providers")}{" "}
                     <span
                       className="size-2.5 rounded-full bg-cyan-500"
-                      title={t("ideProviders") || "IDE Providers"}
+                      title={providerText(t, "ideProviders", "IDE Providers")}
                     />
                     <ProviderCountBadge {...countConfigured(ideProviderEntriesAll)} />
                   </h2>
@@ -1129,12 +1072,19 @@ export default function ProvidersPage() {
                   </button>
                 </div>
                 <p className="text-sm text-text-muted -mt-2">
-                  {t("ideProvidersDesc") ||
-                    "Editors with built-in AI subscription. Use the provider page to import credentials directly from the IDE's keychain."}
+                  {providerText(
+                    t,
+                    "ideProvidersDesc",
+                    "Editors with built-in AI subscription. Use the provider page to import credentials directly from the IDE's keychain."
+                  )}
                 </p>
                 {ideProviderEntries.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-border bg-bg-subtle p-6 text-center text-sm text-text-muted">
-                    {t("noIdeProviders") || "No IDE providers match the current filters."}
+                    {providerText(
+                      t,
+                      "noIdeProviders",
+                      "No IDE providers match the current filters."
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">

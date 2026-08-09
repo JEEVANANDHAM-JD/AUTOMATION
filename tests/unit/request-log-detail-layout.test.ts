@@ -2,96 +2,107 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { NextIntlClientProvider } from "next-intl";
+
+import messages from "../../src/i18n/messages/en.json";
 
 const { default: RequestLoggerDetail } =
   await import("../../src/shared/components/RequestLoggerDetail.tsx");
 
-function renderDetailWithSourceFormat(sourceFormat: string) {
+type RequestLoggerDetailProps = React.ComponentProps<typeof RequestLoggerDetail>;
+
+function renderDetail(props: RequestLoggerDetailProps) {
   return renderToStaticMarkup(
-    React.createElement(RequestLoggerDetail, {
-      log: {
-        status: 200,
-        method: "POST",
-        path: "/v1/chat/completions",
-        timestamp: "2026-04-09T21:27:08.000Z",
-        duration: 2500,
-        provider: "openrouter",
-        sourceFormat,
-        model: "deepseek/deepseek-v4-pro",
-        requestedModel: "openrouter/deepseek/deepseek-v4-pro",
-        cacheSource: "upstream",
-        tokens: {
-          in: 10,
-          out: 2,
-          cacheRead: null,
-          cacheWrite: null,
-          reasoning: null,
-        },
-      },
-      detail: {
-        requestedModel: "openrouter/deepseek/deepseek-v4-pro",
-        cacheSource: "upstream",
-        tokens: {
-          in: 10,
-          out: 2,
-          cacheRead: null,
-          cacheWrite: null,
-          reasoning: null,
-        },
-      },
-      loading: false,
-      onClose: () => {},
-      onCopy: async () => true,
-    })
+    React.createElement(
+      NextIntlClientProvider,
+      { locale: "en", messages, timeZone: "UTC" },
+      React.createElement(RequestLoggerDetail, props)
+    )
   );
 }
 
+function renderDetailWithSourceFormat(sourceFormat: string) {
+  return renderDetail({
+    log: {
+      status: 200,
+      method: "POST",
+      path: "/v1/chat/completions",
+      timestamp: "2026-04-09T21:27:08.000Z",
+      duration: 2500,
+      provider: "openrouter",
+      sourceFormat,
+      model: "deepseek/deepseek-v4-pro",
+      requestedModel: "openrouter/deepseek/deepseek-v4-pro",
+      cacheSource: "upstream",
+      tokens: {
+        in: 10,
+        out: 2,
+        cacheRead: null,
+        cacheWrite: null,
+        reasoning: null,
+      },
+    },
+    detail: {
+      requestedModel: "openrouter/deepseek/deepseek-v4-pro",
+      cacheSource: "upstream",
+      tokens: {
+        in: 10,
+        out: 2,
+        cacheRead: null,
+        cacheWrite: null,
+        reasoning: null,
+      },
+    },
+    loading: false,
+    onClose: () => {},
+    onCopy: async () => true,
+  });
+}
+
 test("request log detail splits token badges into input and output groups", () => {
-  const html = renderToStaticMarkup(
-    React.createElement(RequestLoggerDetail, {
-      log: {
-        status: 200,
-        method: "POST",
-        path: "/v1/chat/completions",
-        timestamp: "2026-04-09T21:27:08.000Z",
-        duration: 2500,
-        provider: "openai-compatible-sp-openai",
-        sourceFormat: "openai-chat",
-        model: "gpt-5.4",
-        requestedModel: "openai-compatible-sp-openai/gpt-5.4",
-        account: "main",
-        apiKeyName: "tools",
-        apiKeyId: "29d9***7e37",
-        comboName: "_Latest-Discounted",
-        cacheSource: "semantic",
-        tokens: {
-          in: 21818,
-          out: 42,
-          cacheRead: 21632,
-          cacheWrite: null,
-          reasoning: null,
-        },
+  const html = renderDetail({
+    log: {
+      status: 200,
+      method: "POST",
+      path: "/v1/chat/completions",
+      timestamp: "2026-04-09T21:27:08.000Z",
+      duration: 2500,
+      provider: "openai-compatible-sp-openai",
+      sourceFormat: "openai-chat",
+      model: "gpt-5.4",
+      requestedModel: "openai-compatible-sp-openai/gpt-5.4",
+      account: "main",
+      apiKeyName: "tools",
+      apiKeyId: "29d9***7e37",
+      comboName: "_Latest-Discounted",
+      cacheSource: "semantic",
+      tokens: {
+        in: 21818,
+        out: 42,
+        cacheRead: 21632,
+        cacheWrite: null,
+        reasoning: null,
       },
-      detail: {
-        account: "main",
-        apiKeyName: "tools",
-        apiKeyId: "29d9***7e37",
-        comboName: "_Latest-Discounted",
-        requestedModel: "openai-compatible-sp-openai/gpt-5.4",
-        cacheSource: "semantic",
-        tokens: {
-          in: 21818,
-          out: 42,
-          cacheRead: 21632,
-          cacheWrite: null,
-          reasoning: null,
-        },
+    },
+    detail: {
+      account: "main",
+      apiKeyName: "tools",
+      apiKeyId: "29d9***7e37",
+      comboName: "_Latest-Discounted",
+      requestedModel: "openai-compatible-sp-openai/gpt-5.4",
+      cacheSource: "semantic",
+      tokens: {
+        in: 21818,
+        out: 42,
+        cacheRead: 21632,
+        cacheWrite: null,
+        reasoning: null,
       },
-      loading: false,
-      onClose: () => {},
-      onCopy: async () => true,
-    })
-  );
+    },
+    loading: false,
+    onClose: () => {},
+    onCopy: async () => true,
+  });
 
   const inputLabelIndex = html.indexOf(">Input<");
   const outputLabelIndex = html.indexOf(">Output<");
@@ -134,43 +145,41 @@ test("request log detail compression-summary badge shows positive saved%, never 
   // prompt was compressed (compressed=5286, totalIn=0). The fix clamps pct to [0, 100] and
   // uses "(N% saved)" so the user-facing label is always positive.
   const make = (tokensIn: number, tokensCompressed: number) =>
-    renderToStaticMarkup(
-      React.createElement(RequestLoggerDetail, {
-        log: {
-          status: 200,
-          method: "POST",
-          path: "/v1/chat/completions",
-          timestamp: "2026-04-09T21:27:08.000Z",
-          duration: 1500,
-          provider: "openai-compatible-sp-openai",
-          sourceFormat: "openai-chat",
-          model: "gpt-5.4",
-          requestedModel: "openai-compatible-sp-openai/gpt-5.4",
-          cacheSource: "semantic",
-          tokens: {
-            in: tokensIn,
-            out: 42,
-            cacheRead: null,
-            cacheWrite: null,
-            reasoning: null,
-            compressed: tokensCompressed,
-          },
+    renderDetail({
+      log: {
+        status: 200,
+        method: "POST",
+        path: "/v1/chat/completions",
+        timestamp: "2026-04-09T21:27:08.000Z",
+        duration: 1500,
+        provider: "openai-compatible-sp-openai",
+        sourceFormat: "openai-chat",
+        model: "gpt-5.4",
+        requestedModel: "openai-compatible-sp-openai/gpt-5.4",
+        cacheSource: "semantic",
+        tokens: {
+          in: tokensIn,
+          out: 42,
+          cacheRead: null,
+          cacheWrite: null,
+          reasoning: null,
+          compressed: tokensCompressed,
         },
-        detail: {
-          tokens: {
-            in: tokensIn,
-            out: 42,
-            cacheRead: null,
-            cacheWrite: null,
-            reasoning: null,
-            compressed: tokensCompressed,
-          },
+      },
+      detail: {
+        tokens: {
+          in: tokensIn,
+          out: 42,
+          cacheRead: null,
+          cacheWrite: null,
+          reasoning: null,
+          compressed: tokensCompressed,
         },
-        loading: false,
-        onClose: () => {},
-        onCopy: async () => true,
-      })
-    );
+      },
+      loading: false,
+      onClose: () => {},
+      onCopy: async () => true,
+    });
 
   // Original bug repro: totalIn=0, compressed=5286 → previously rendered "(−100%)".
   const fullyCompressed = make(0, 5286);
@@ -215,12 +224,8 @@ test("request log detail follows the email visibility setting for accounts", () 
     onCopy: async () => true,
   };
 
-  const hiddenHtml = renderToStaticMarkup(
-    React.createElement(RequestLoggerDetail, { ...props, emailsVisible: false })
-  );
-  const visibleHtml = renderToStaticMarkup(
-    React.createElement(RequestLoggerDetail, { ...props, emailsVisible: true })
-  );
+  const hiddenHtml = renderDetail({ ...props, emailsVisible: false });
+  const visibleHtml = renderDetail({ ...props, emailsVisible: true });
 
   assert.match(hiddenHtml, /log\*{6}@\*{8}com/);
   assert.equal(hiddenHtml.includes("logs.user@example.com"), false);
