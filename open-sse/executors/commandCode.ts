@@ -6,7 +6,7 @@ import { BaseExecutor, mergeUpstreamExtraHeaders, type ExecuteInput } from "./ba
 
 type JsonRecord = Record<string, unknown>;
 
-export const COMMAND_CODE_VERSION = process.env.COMMAND_CODE_VERSION?.trim() || "0.33.2";
+export const COMMAND_CODE_VERSION = process.env.COMMAND_CODE_VERSION?.trim() || "1.15.1";
 // Hard server-side ceiling enforced by Command Code's /alpha/generate endpoint:
 // any request with params.max_tokens > 200_000 is rejected with a 400
 // "Too big: expected number to be <=200000 at params.max_tokens". We only use
@@ -53,14 +53,21 @@ function recordOrEmpty(value: unknown): JsonRecord {
  * Code's /alpha/generate schema REQUIRES (rejects a missing field with
  * `missing required field 'arguments'`). Valid source values round-trip:
  *   - object arguments  -> JSON string of the object
- *   - string arguments  -> the string as-is (already valid JSON)
- *   - missing / empty / invalid JSON -> "{}" (a valid empty-object string)
+ *   - valid JSON string arguments -> the string as-is
+ *   - missing / empty / invalid JSON string -> "{}" (a valid empty-object string)
  */
 function toolCallArgumentsString(value: unknown): string {
-  const parsed = recordOrEmpty(value);
-  if (isRecord(value)) return JSON.stringify(parsed);
-  if (typeof value === "string" && value.trim()) return value;
-  return JSON.stringify(parsed);
+  if (isRecord(value)) return JSON.stringify(value);
+  if (typeof value === "string" && value.trim()) {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (isRecord(parsed)) return value;
+    } catch {
+      return "{}";
+    }
+    return "{}";
+  }
+  return JSON.stringify(recordOrEmpty(value));
 }
 
 function normalizeContentText(content: unknown): string {
@@ -208,15 +215,24 @@ function convertTools(tools: unknown): unknown[] {
   });
 }
 
-function completeToolCallIds(messages: JsonRecord[]): Set<string> {
+function buildToolCallMetadata(messages: JsonRecord[]): {
+  pairedToolCallIds: Set<string>;
+  toolCallNames: Map<string, string>;
+} {
   const callIds = new Set<string>();
   const resultIds = new Set<string>();
+  const toolCallNames = new Map<string, string>();
 
   for (const message of messages) {
     if (message.role === "assistant") {
       for (const call of asRecordArray(message.tool_calls)) {
         const id = stringValue(call.id);
-        if (id) callIds.add(id);
+        if (id) {
+          callIds.add(id);
+          const fn = isRecord(call.function) ? call.function : {};
+          const name = stringValue(fn.name) || stringValue(call.name);
+          if (name) toolCallNames.set(id, name);
+        }
       }
     } else if (message.role === "tool") {
       const id = stringValue(message.tool_call_id);
@@ -224,7 +240,8 @@ function completeToolCallIds(messages: JsonRecord[]): Set<string> {
     }
   }
 
-  return new Set([...callIds].filter((id) => resultIds.has(id)));
+  const pairedToolCallIds = new Set([...callIds].filter((id) => resultIds.has(id)));
+  return { pairedToolCallIds, toolCallNames };
 }
 
 function convertMessages(
@@ -232,7 +249,7 @@ function convertMessages(
   model?: string | null
 ): { system: string; messages: unknown[] } {
   const source = asRecordArray(messages);
-  const pairedToolCallIds = completeToolCallIds(source);
+  const { pairedToolCallIds, toolCallNames } = buildToolCallMetadata(source);
   const out: unknown[] = [];
   const system: string[] = [];
   const isVision = isCommandCodeVisionModel(model);
@@ -263,7 +280,7 @@ function convertMessages(
         parts.push({
           type: "tool-call",
           toolCallId: id,
-          toolName: stringValue(fn.name) || "",
+          toolName: stringValue(fn.name) || stringValue(call.name) || "unknown",
           input: parsedInput,
           // /alpha/generate requires this field on assistant tool-call parts;
           // a missing one is rejected with `missing required field 'arguments'`.
@@ -278,13 +295,14 @@ function convertMessages(
     if (role === "tool") {
       const toolCallId = stringValue(message.tool_call_id) || "";
       if (!toolCallId || !pairedToolCallIds.has(toolCallId)) continue;
+      const toolName = stringValue(message.name) || toolCallNames.get(toolCallId) || "unknown";
       out.push({
         role: "tool",
         content: [
           {
             type: "tool-result",
             toolCallId,
-            toolName: stringValue(message.name) || "",
+            toolName,
             output: { type: "text", value: normalizeContentText(message.content) },
           },
         ],
