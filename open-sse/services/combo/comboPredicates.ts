@@ -196,6 +196,11 @@ const REQUEST_SCOPED_UPSTREAM_ERROR_CODES = new Set([
   "upstream_response_failed",
   // Local combo per-target timer (targetTimeoutRunner) — not a connection health signal.
   "combo_target_timeout",
+  // #9164: local limiter capacity is an OmniRoute request-scoped condition, not
+  // evidence that the upstream provider or connection is unhealthy.
+  "rate_limit_queue_timeout",
+  "rate_limit_queue_full",
+  "rate_limit_queue_wedged",
 ]);
 
 /** Request/model-specific failures must not poison provider-wide resilience state. */
@@ -205,7 +210,11 @@ export function isRequestScopedUpstreamFailure(error?: {
 }): boolean {
   const code = typeof error?.code === "string" ? error.code.toLowerCase() : "";
   const type = typeof error?.type === "string" ? error.type.toLowerCase() : "";
-  return REQUEST_SCOPED_UPSTREAM_ERROR_CODES.has(code) || type === "context_length_exceeded";
+  return (
+    REQUEST_SCOPED_UPSTREAM_ERROR_CODES.has(code) ||
+    type === "context_length_exceeded" ||
+    type === "local_queue_capacity"
+  );
 }
 
 /** Request-scoped classification that also has access to the HTTP body. */

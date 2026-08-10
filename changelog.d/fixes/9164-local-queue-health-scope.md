@@ -1,0 +1,1 @@
+- **fix(resilience):** Treat local rate-limit queue timeout/full/wedge errors as request-scoped so they cannot poison provider or connection health state ([#9164](https://github.com/diegosouzapw/OmniRoute/pull/9164)) — thanks @Zartharas
