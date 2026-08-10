@@ -50,6 +50,7 @@ import {
   fetchWithTimeout,
   getConfiguredTimeout,
 } from "@/shared/utils/fetchTimeout";
+import { handleFalVideoGeneration } from "./mediaGeneration/fal.ts";
 
 /**
  * Resolve the base URL for OpenAI-compatible video generation endpoints.
@@ -199,6 +200,10 @@ export async function handleVideoGeneration({ body, credentials, log, resolvedPr
 
   if (providerConfig.format === "vertex-veo") {
     return handleVertexVeoGeneration({ model, body, credentials, log });
+  }
+
+  if (providerConfig.format === "fal-ai-video") {
+    return handleFalVideoGeneration({ model, provider, providerConfig, body, credentials, log });
   }
 
   if (providerConfig.format === "google-flow") {

@@ -1455,6 +1455,7 @@ async function handleFalAIImageGeneration({
 }) {
   const startTime = Date.now();
   const token = credentials.apiKey || credentials.accessToken;
+  const falModel = model.startsWith("fal-ai/") ? model : `fal-ai/${model}`;
   const { imageUrl, imageUrls } = extractImageInputs(body);
   const upstreamBody: Record<string, unknown> = {
     prompt: body.prompt,
@@ -1500,7 +1501,7 @@ async function handleFalAIImageGeneration({
   }
 
   try {
-    const response = await fetch(`${providerConfig.baseUrl.replace(/\/$/, "")}/${model}`, {
+    const response = await fetch(`${providerConfig.baseUrl.replace(/\/$/, "")}/${falModel}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -2149,7 +2150,7 @@ function parseSizeToDimensions(size, fallback = 1024) {
   };
 }
 
-function normalizeRequestedImageFormat(
+export function normalizeRequestedImageFormat(
   body,
   fallback = "png",
   allowedFormats = ["jpeg", "png", "webp"]
@@ -2169,7 +2170,7 @@ function normalizeRequestedImageFormat(
   return fallback;
 }
 
-function mapFalImageSize(size, fallback = "square_hd") {
+export function mapFalImageSize(size, fallback = "square_hd") {
   if (typeof size !== "string") return fallback;
   if (FAL_PRESET_SIZES[size]) return FAL_PRESET_SIZES[size];
   if (size.includes("x")) {
@@ -2200,7 +2201,7 @@ function shouldIncludeStabilityMask(model) {
   ]).has(model);
 }
 
-async function normalizeProviderImagePayload(payload, body, log, defaultFormat) {
+export async function normalizeProviderImagePayload(payload, body, log, defaultFormat) {
   const candidates = [];
 
   const pushCandidate = (value) => {
